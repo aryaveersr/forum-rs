@@ -5,4 +5,14 @@ edition = "2024"
 
 [dependencies]
 axum = "0.8.8"
-tokio = { version = "1.49.0", features = ["rt-multi-thread", "macros"] }
+axum-macros = "0.5.0"
+config = "0.15.19"
+serde = "1.0.228"
+sqlx = { version = "0.8.6", default-features = false, features = [
+  "macros",
+  "migrate",
+  "postgres",
+  "runtime-tokio-rustls",
+  "uuid"
+] }
+tokio = { version = "1.49.0", features = ["macros", "rt-multi-thread"] }
