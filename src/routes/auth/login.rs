@@ -34,6 +34,7 @@ pub async fn handler(State(pool): State<PgPool>, Json(body): Json<Body>) -> Resu
 
     let session_id = Uuid::new_v4();
     insert_session(&pool, session_id, user.id).await?;
+    delete_expired_sessions(&pool).await?;
 
     Ok(session_id.to_string())
 }
@@ -86,6 +87,15 @@ async fn insert_session(pool: &PgPool, session_id: Uuid, user_id: Uuid) -> Resul
     )
     .execute(pool)
     .await?;
+
+    Ok(())
+}
+
+#[tracing::instrument(name = "Delete Expired Sessions", skip_all)]
+async fn delete_expired_sessions(pool: &PgPool) -> Result<(), Error> {
+    sqlx::query!("DELETE FROM sessions WHERE expires_at < $1", Utc::now())
+        .execute(pool)
+        .await?;
 
     Ok(())
 }
