@@ -1,0 +1,6 @@
+-- Create sessions table
+CREATE TABLE sessions (
+    id UUID PRIMARY KEY,
+    user_id UUID NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL
+);

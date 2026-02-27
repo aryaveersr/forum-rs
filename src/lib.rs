@@ -8,6 +8,7 @@ use tower_http::{
 };
 use uuid::Uuid;
 
+mod auth;
 mod config;
 mod models;
 mod routes;

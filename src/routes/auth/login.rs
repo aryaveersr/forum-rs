@@ -5,6 +5,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
+use chrono::{Duration, Utc};
 use serde::Deserialize;
 use sqlx::PgPool;
 use thiserror::Error;
@@ -21,10 +22,7 @@ pub struct Body {
     fields(username = body.username)
     skip_all,
 )]
-pub async fn handler(
-    State(pool): State<PgPool>,
-    Json(body): Json<Body>,
-) -> Result<StatusCode, Error> {
+pub async fn handler(State(pool): State<PgPool>, Json(body): Json<Body>) -> Result<String, Error> {
     let user = match get_user(&pool, &body.username).await? {
         Some(user) => user,
         None => return Err(Error::DoesNotExist),
@@ -34,9 +32,10 @@ pub async fn handler(
         return Err(Error::InvalidCredentials);
     }
 
-    tracing::info!("Login successful for {}", user.id);
+    let session_id = Uuid::new_v4();
+    insert_session(&pool, session_id, user.id).await?;
 
-    Ok(StatusCode::OK)
+    Ok(session_id.to_string())
 }
 
 struct User {
@@ -75,6 +74,20 @@ async fn check_password(password: String, hash: String) -> Result<bool, password
     })
     .await
     .unwrap()
+}
+
+#[tracing::instrument(name = "Create Session", skip_all)]
+async fn insert_session(pool: &PgPool, session_id: Uuid, user_id: Uuid) -> Result<(), Error> {
+    sqlx::query!(
+        "INSERT INTO sessions (id, user_id, expires_at) VALUES ($1, $2, $3)",
+        session_id,
+        user_id,
+        Utc::now() + Duration::days(7)
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
 }
 
 #[derive(Debug, Error)]
