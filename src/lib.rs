@@ -6,11 +6,13 @@ use tower_http::{
     normalize_path::{NormalizePath, NormalizePathLayer},
     trace::TraceLayer,
 };
-use tracing::Level;
 use uuid::Uuid;
 
 mod config;
+mod models;
 mod routes;
+mod task;
+
 pub use config::CONFIG;
 
 #[derive(Clone, FromRef)]
@@ -26,7 +28,7 @@ pub fn app(pool: PgPool) -> NormalizePath<Router> {
         .with_state(state)
         .layer(TraceLayer::new_for_http().make_span_with(|req: &Request| {
             tracing::span!(
-                Level::DEBUG,
+                tracing::Level::DEBUG,
                 "request",
                 method = %req.method(),
                 uri = %req.uri(),
