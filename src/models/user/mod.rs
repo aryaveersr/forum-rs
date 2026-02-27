@@ -1,5 +1,3 @@
-mod display_name;
-mod username;
-
-pub use display_name::*;
-pub use username::*;
+pub mod display_name;
+pub mod password;
+pub mod username;

@@ -13,7 +13,11 @@ use sqlx::PgPool;
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::models::user::{DisplayName, DisplayNameError, Username, UsernameError};
+use crate::models::user::{
+    display_name::{DisplayName, DisplayNameError},
+    password::{Password, PasswordError},
+    username::{Username, UsernameError},
+};
 
 #[derive(Deserialize)]
 pub struct Body {
@@ -36,6 +40,7 @@ pub async fn handler(
 ) -> Result<StatusCode, Error> {
     let username = Username::try_from(body.username)?;
     let display_name = DisplayName::try_from(body.display_name)?;
+    let password = Password::try_from(body.password)?;
 
     if check_if_username_exists(&pool, &username).await? {
         return Err(Error::AlreadyExists);
@@ -43,7 +48,7 @@ pub async fn handler(
 
     let id = Uuid::new_v4();
     let salt = SaltString::encode_b64(id.as_bytes())?;
-    let password_hash = Argon2::default().hash_password(body.password.as_bytes(), &salt)?;
+    let password_hash = Argon2::default().hash_password(password.as_bytes(), &salt)?;
 
     insert_user(&pool, id, username, display_name, password_hash).await?;
 
@@ -88,6 +93,7 @@ async fn insert_user(
 pub enum Error {
     Username(#[from] UsernameError),
     DisplayName(#[from] DisplayNameError),
+    Password(#[from] PasswordError),
     Database(#[from] sqlx::Error),
     PasswordHash(#[from] password_hash::Error),
 
@@ -100,7 +106,7 @@ impl IntoResponse for Error {
         match self {
             Error::AlreadyExists => StatusCode::CONFLICT.into_response(),
 
-            Error::Username(_) | Error::DisplayName(_) => {
+            Error::Username(_) | Error::DisplayName(_) | Error::Password(_) => {
                 let err = self.to_string();
                 (StatusCode::BAD_REQUEST, err).into_response()
             }
