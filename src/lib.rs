@@ -11,7 +11,6 @@ use uuid::Uuid;
 mod config;
 mod models;
 mod routes;
-mod task;
 
 pub use config::CONFIG;
 

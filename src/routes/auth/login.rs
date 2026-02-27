@@ -10,8 +10,6 @@ use sqlx::PgPool;
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::task::spawn_blocking_with_tracing;
-
 #[derive(Deserialize)]
 pub struct Body {
     username: String,
@@ -61,14 +59,19 @@ async fn get_user(pool: &PgPool, username: &str) -> Result<Option<User>, Error> 
 
 #[tracing::instrument(name = "Check Password", skip_all)]
 async fn check_password(password: String, hash: String) -> Result<bool, password_hash::Error> {
-    spawn_blocking_with_tracing(move || {
-        let hash = PasswordHash::new(&hash).expect("Failed to parse PasswordHash from database.");
+    let span = tracing::Span::current();
 
-        match Argon2::default().verify_password(password.as_bytes(), &hash) {
-            Ok(()) => Ok(true),
-            Err(password_hash::Error::Password) => Ok(false),
-            Err(err) => Err(err),
-        }
+    tokio::task::spawn_blocking(move || {
+        span.in_scope(move || {
+            let hash =
+                PasswordHash::new(&hash).expect("Failed to parse PasswordHash from database.");
+
+            match Argon2::default().verify_password(password.as_bytes(), &hash) {
+                Ok(()) => Ok(true),
+                Err(password_hash::Error::Password) => Ok(false),
+                Err(err) => Err(err),
+            }
+        })
     })
     .await
     .unwrap()
