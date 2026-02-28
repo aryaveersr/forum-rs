@@ -3,7 +3,7 @@ use std::fmt::{self, Display, Formatter};
 use slug::slugify;
 use thiserror::Error;
 
-use crate::{models::post::title::Title, utils};
+use crate::{domain::post::title::Title, utils};
 
 pub struct Slug {
     base: String,

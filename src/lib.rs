@@ -9,7 +9,7 @@ use tower_http::{
 
 mod auth;
 mod config;
-mod models;
+mod domain;
 mod routes;
 mod utils;
 

@@ -8,7 +8,7 @@ use serde::Serialize;
 use sqlx::PgPool;
 use thiserror::Error;
 
-use crate::models::post::slug::{Slug, SlugError};
+use crate::domain::post::slug::{Slug, SlugError};
 
 #[tracing::instrument(name = "Get Post", skip(pool))]
 pub async fn handler(

@@ -13,7 +13,7 @@ use sqlx::PgPool;
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::models::user::{
+use crate::domain::user::{
     display_name::{DisplayName, DisplayNameError},
     password::{Password, PasswordError},
     username::{Username, UsernameError},

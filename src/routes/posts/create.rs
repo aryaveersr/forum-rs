@@ -11,7 +11,7 @@ use uuid::Uuid;
 
 use crate::{
     auth::Session,
-    models::post::{
+    domain::post::{
         content::{Content, ContentError},
         slug::Slug,
         title::{Title, TitleError},
