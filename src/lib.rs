@@ -6,12 +6,12 @@ use tower_http::{
     normalize_path::{NormalizePath, NormalizePathLayer},
     trace::TraceLayer,
 };
-use uuid::Uuid;
 
 mod auth;
 mod config;
 mod models;
 mod routes;
+mod utils;
 
 pub use config::CONFIG;
 
@@ -32,7 +32,7 @@ pub fn app(pool: PgPool) -> NormalizePath<Router> {
                 "request",
                 method = %req.method(),
                 uri = %req.uri(),
-                req_id = %Uuid::new_v4().to_string().split('-').next_back().unwrap(),
+                req_id = %utils::random_string(),
             )
         }));
 
