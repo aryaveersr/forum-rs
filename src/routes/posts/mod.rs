@@ -1,6 +1,6 @@
 use axum::{
     Router,
-    routing::{delete, get, post},
+    routing::{get, post},
 };
 
 use crate::AppState;
@@ -14,7 +14,11 @@ mod update;
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/", post(create::handler))
-        .route("/get/{slug}", get(get::handler))
         .route("/list", get(list::handler))
-        .route("/{id}", delete(delete::handler).patch(update::handler))
+        .route(
+            "/{slug}",
+            get(get::handler)
+                .delete(delete::handler)
+                .patch(update::handler),
+        )
 }

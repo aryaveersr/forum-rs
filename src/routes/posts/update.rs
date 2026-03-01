@@ -32,24 +32,24 @@ pub struct Body {
 pub async fn handler(
     session: Session,
     State(pool): State<PgPool>,
-    Path(id): Path<Uuid>,
+    Path(slug): Path<Slug>,
     Json(body): Json<Body>,
 ) -> Result<StatusCode, Error> {
-    let post_author = get_post_author(&pool, id)
+    let author = get_post_author(&pool, &slug)
         .await?
         .ok_or(Error::DoesNotExist)?;
 
-    if session.user_id != post_author {
+    if session.user_id != author {
         return Err(Error::Unauthorized);
     }
 
-    update_post(&pool, id, body).await?;
+    update_post(&pool, slug, body).await?;
     Ok(StatusCode::OK)
 }
 
 #[tracing::instrument(skip_all)]
-async fn get_post_author(pool: &PgPool, id: Uuid) -> Result<Option<Uuid>, sqlx::Error> {
-    let row = sqlx::query_scalar!("SELECT author_id FROM posts WHERE id = $1", id)
+async fn get_post_author(pool: &PgPool, slug: &Slug) -> Result<Option<Uuid>, sqlx::Error> {
+    let row = sqlx::query_scalar!("SELECT author_id FROM posts WHERE slug = $1", slug.as_ref())
         .fetch_optional(pool)
         .await?;
 
@@ -57,13 +57,13 @@ async fn get_post_author(pool: &PgPool, id: Uuid) -> Result<Option<Uuid>, sqlx::
 }
 
 #[tracing::instrument(skip_all)]
-async fn update_post(pool: &PgPool, id: Uuid, body: Body) -> Result<(), sqlx::Error> {
+async fn update_post(pool: &PgPool, slug: Slug, body: Body) -> Result<(), sqlx::Error> {
     sqlx::query!(
-        "UPDATE posts SET title = $1, content = $2, slug = $3 WHERE id = $4",
+        "UPDATE posts SET title = $1, content = $2, slug = $3 WHERE slug = $4",
         body.title.as_ref(),
         body.content.as_ref(),
         body.slug.as_ref(),
-        id
+        slug.as_ref()
     )
     .execute(pool)
     .await?;

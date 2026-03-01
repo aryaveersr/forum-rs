@@ -7,29 +7,29 @@ use sqlx::PgPool;
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::session::Session;
+use crate::{domain::post::slug::Slug, session::Session};
 
 #[tracing::instrument(name = "Delete Post", skip(pool))]
 pub async fn handler(
     session: Session,
     State(pool): State<PgPool>,
-    Path(id): Path<Uuid>,
+    Path(slug): Path<Slug>,
 ) -> Result<StatusCode, Error> {
-    let post_author = get_post_author(&pool, id)
+    let author = get_post_author(&pool, &slug)
         .await?
         .ok_or(Error::DoesNotExist)?;
 
-    if session.user_id != post_author {
+    if session.user_id != author {
         return Err(Error::Unauthorized);
     }
 
-    delete_post(&pool, id).await?;
+    delete_post(&pool, slug).await?;
     Ok(StatusCode::OK)
 }
 
 #[tracing::instrument(skip_all)]
-async fn get_post_author(pool: &PgPool, id: Uuid) -> Result<Option<Uuid>, sqlx::Error> {
-    let row = sqlx::query_scalar!("SELECT author_id FROM posts WHERE id = $1", id)
+async fn get_post_author(pool: &PgPool, slug: &Slug) -> Result<Option<Uuid>, sqlx::Error> {
+    let row = sqlx::query_scalar!("SELECT author_id FROM posts WHERE slug = $1", slug.as_ref())
         .fetch_optional(pool)
         .await?;
 
@@ -37,8 +37,8 @@ async fn get_post_author(pool: &PgPool, id: Uuid) -> Result<Option<Uuid>, sqlx::
 }
 
 #[tracing::instrument(skip_all)]
-async fn delete_post(pool: &PgPool, id: Uuid) -> Result<(), sqlx::Error> {
-    sqlx::query!("DELETE FROM posts WHERE id = $1", id)
+async fn delete_post(pool: &PgPool, slug: Slug) -> Result<(), sqlx::Error> {
+    sqlx::query!("DELETE FROM posts WHERE slug = $1", slug.as_ref())
         .execute(pool)
         .await?;
 
