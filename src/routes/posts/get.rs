@@ -34,7 +34,7 @@ async fn get_post(pool: &PgPool, slug: Slug) -> Result<Option<Post>, sqlx::Error
     let post = sqlx::query_as!(
         Post,
         r#"SELECT id, title, content FROM posts WHERE slug = $1"#,
-        slug.to_string()
+        slug.as_ref()
     )
     .fetch_optional(pool)
     .await?;

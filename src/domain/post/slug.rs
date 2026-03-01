@@ -1,21 +1,17 @@
-use std::fmt::{self, Display, Formatter};
-
 use slug::slugify;
 use thiserror::Error;
 
 use crate::{domain::post::title::Title, utils};
 
-pub struct Slug {
-    base: String,
-    random: Option<String>,
-}
+pub struct Slug(String);
 
 impl From<&Title> for Slug {
     fn from(value: &Title) -> Self {
-        Slug {
-            base: slugify(value.as_ref()),
-            random: Some(utils::random_string()),
-        }
+        Slug(format!(
+            "{}-{}",
+            slugify(value.as_ref()),
+            utils::random_string()
+        ))
     }
 }
 
@@ -31,28 +27,22 @@ impl TryFrom<String> for Slug {
             return Err(SlugError::InvalidCharacter);
         }
 
-        Ok(Slug {
-            base: value,
-            random: None,
-        })
+        Ok(Slug(value))
     }
 }
 
 impl Slug {
     pub fn randomize(&mut self) {
-        self.random = Some(utils::random_string());
+        self.0 = match self.0.rsplit_once('-') {
+            Some(prefix) => format!("{}-{}", prefix.0, utils::random_string()),
+            None => format!("{}-{}", self.0, utils::random_string()),
+        };
     }
 }
 
-impl Display for Slug {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.base)?;
-
-        if let Some(random) = &self.random {
-            write!(f, "-{random}")?;
-        }
-
-        Ok(())
+impl AsRef<str> for Slug {
+    fn as_ref(&self) -> &str {
+        &self.0
     }
 }
 

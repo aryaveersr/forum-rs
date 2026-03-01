@@ -44,7 +44,7 @@ pub async fn handler(
 
     Ok(Json(json!({
         "id": id.to_string(),
-        "slug": slug.to_string()
+        "slug": slug.as_ref()
     })))
 }
 
@@ -54,7 +54,7 @@ async fn generate_slug(pool: &PgPool, title: &Title) -> Result<Slug, sqlx::Error
 
     while sqlx::query_scalar!(
         r#"SELECT EXISTS(SELECT 1 FROM posts WHERE slug = $1) AS "exists!""#,
-        slug.to_string()
+        slug.as_ref()
     )
     .fetch_one(pool)
     .await?
@@ -80,7 +80,7 @@ async fn insert_post(
         author_id,
         title.as_ref(),
         content.as_ref(),
-        slug.to_string(),
+        slug.as_ref(),
     )
     .execute(pool)
     .await?;
