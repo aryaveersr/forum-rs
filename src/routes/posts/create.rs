@@ -11,8 +11,8 @@ use thiserror::Error;
 use uuid::Uuid;
 
 use crate::{
-    auth::Session,
     domain::post::{content::Content, slug::Slug, title::Title},
+    session::Session,
 };
 
 #[derive(Deserialize)]

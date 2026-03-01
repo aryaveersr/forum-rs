@@ -5,13 +5,15 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use chrono::{Duration, Utc};
 use serde::Deserialize;
 use sqlx::PgPool;
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::domain::user::{password::Password, username::Username};
+use crate::{
+    domain::user::{password::Password, username::Username},
+    session::create_session,
+};
 
 #[derive(Deserialize, Debug)]
 pub struct Body {
@@ -29,9 +31,7 @@ pub async fn handler(State(pool): State<PgPool>, Json(body): Json<Body>) -> Resu
         return Err(Error::InvalidCredentials);
     }
 
-    let session_id = Uuid::new_v4();
-    insert_session(&pool, session_id, user.id).await?;
-    delete_expired_sessions(&pool).await?;
+    let session_id = create_session(&pool, user.id).await?;
 
     Ok(session_id.to_string())
 }
@@ -72,29 +72,6 @@ async fn check_password(password: Password, hash: String) -> Result<bool, passwo
     })
     .await
     .unwrap()
-}
-
-#[tracing::instrument(skip_all)]
-async fn insert_session(pool: &PgPool, session_id: Uuid, user_id: Uuid) -> Result<(), Error> {
-    sqlx::query!(
-        "INSERT INTO sessions (id, user_id, expires_at) VALUES ($1, $2, $3)",
-        session_id,
-        user_id,
-        Utc::now() + Duration::days(7)
-    )
-    .execute(pool)
-    .await?;
-
-    Ok(())
-}
-
-#[tracing::instrument(skip_all)]
-async fn delete_expired_sessions(pool: &PgPool) -> Result<(), Error> {
-    sqlx::query!("DELETE FROM sessions WHERE expires_at < $1", Utc::now())
-        .execute(pool)
-        .await?;
-
-    Ok(())
 }
 
 #[derive(Debug, Error)]

@@ -7,7 +7,7 @@ use sqlx::PgPool;
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::{auth::Session, domain::user::username::Username};
+use crate::{domain::user::username::Username, session::Session};
 
 #[tracing::instrument(name = "Delete User", skip(pool))]
 pub async fn handler(

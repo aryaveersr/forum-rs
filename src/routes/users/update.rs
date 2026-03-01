@@ -10,8 +10,8 @@ use thiserror::Error;
 use uuid::Uuid;
 
 use crate::{
-    auth::Session,
     domain::user::{display_name::DisplayName, username::Username},
+    session::Session,
 };
 
 #[derive(Deserialize)]

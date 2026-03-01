@@ -13,7 +13,10 @@ use sqlx::PgPool;
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::domain::user::{display_name::DisplayName, password::Password, username::Username};
+use crate::{
+    domain::user::{display_name::DisplayName, password::Password, username::Username},
+    session::create_session,
+};
 
 #[derive(Deserialize, Debug)]
 pub struct Body {
@@ -26,7 +29,7 @@ pub struct Body {
 pub async fn handler(
     State(pool): State<PgPool>,
     Json(body): Json<Body>,
-) -> Result<StatusCode, Error> {
+) -> Result<(StatusCode, String), Error> {
     if check_if_username_exists(&pool, &body.username).await? {
         return Err(Error::AlreadyExists);
     }
@@ -37,7 +40,9 @@ pub async fn handler(
 
     insert_user(&pool, id, body.username, body.display_name, password_hash).await?;
 
-    Ok(StatusCode::CREATED)
+    let session_id = create_session(&pool, id).await?;
+
+    Ok((StatusCode::CREATED, session_id.to_string()))
 }
 
 #[tracing::instrument(skip_all)]

@@ -7,10 +7,10 @@ use tower_http::{
     trace::TraceLayer,
 };
 
-mod auth;
 mod config;
 mod domain;
 mod routes;
+mod session;
 mod utils;
 
 pub use config::CONFIG;
