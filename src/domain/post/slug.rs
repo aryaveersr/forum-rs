@@ -1,8 +1,11 @@
+use serde::Deserialize;
 use slug::slugify;
 use thiserror::Error;
 
 use crate::{domain::post::title::Title, utils};
 
+#[derive(Deserialize, Debug)]
+#[serde(try_from = "String")]
 pub struct Slug(String);
 
 impl From<&Title> for Slug {

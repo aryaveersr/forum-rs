@@ -1,5 +1,8 @@
+use serde::Deserialize;
 use thiserror::Error;
 
+#[derive(Deserialize)]
+#[serde(try_from = "String")]
 pub struct Content(String);
 
 impl TryFrom<String> for Content {

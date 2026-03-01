@@ -11,22 +11,19 @@ use sqlx::PgPool;
 use thiserror::Error;
 use uuid::Uuid;
 
-#[derive(Deserialize)]
+use crate::domain::user::{password::Password, username::Username};
+
+#[derive(Deserialize, Debug)]
 pub struct Body {
-    username: String,
-    password: String,
+    username: Username,
+    password: Password,
 }
 
-#[tracing::instrument(
-    name = "Login User",
-    fields(username = body.username)
-    skip_all,
-)]
+#[tracing::instrument(name = "Login User", skip(pool))]
 pub async fn handler(State(pool): State<PgPool>, Json(body): Json<Body>) -> Result<String, Error> {
-    let user = match get_user(&pool, &body.username).await? {
-        Some(user) => user,
-        None => return Err(Error::DoesNotExist),
-    };
+    let user = get_user(&pool, &body.username)
+        .await?
+        .ok_or(Error::DoesNotExist)?;
 
     if !check_password(body.password, user.password_hash).await? {
         return Err(Error::InvalidCredentials);
@@ -45,11 +42,11 @@ struct User {
 }
 
 #[tracing::instrument(name = "Get User", skip_all)]
-async fn get_user(pool: &PgPool, username: &str) -> Result<Option<User>, Error> {
+async fn get_user(pool: &PgPool, username: &Username) -> Result<Option<User>, Error> {
     let user = sqlx::query_as!(
         User,
         r#"SELECT id, password_hash FROM users WHERE username = $1"#,
-        username
+        username.as_ref()
     )
     .fetch_optional(pool)
     .await?;
@@ -58,7 +55,7 @@ async fn get_user(pool: &PgPool, username: &str) -> Result<Option<User>, Error> 
 }
 
 #[tracing::instrument(name = "Check Password", skip_all)]
-async fn check_password(password: String, hash: String) -> Result<bool, password_hash::Error> {
+async fn check_password(password: Password, hash: String) -> Result<bool, password_hash::Error> {
     let span = tracing::Span::current();
 
     tokio::task::spawn_blocking(move || {

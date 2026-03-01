@@ -12,34 +12,21 @@ use uuid::Uuid;
 
 use crate::{
     auth::Session,
-    domain::post::{
-        content::{Content, ContentError},
-        slug::Slug,
-        title::{Title, TitleError},
-    },
+    domain::post::{content::Content, slug::Slug, title::Title},
 };
 
 #[derive(Deserialize)]
 pub struct Body {
-    title: String,
-    content: String,
+    title: Title,
+    content: Content,
 }
 
-#[tracing::instrument(
-    name = "Create Post",
-    fields(
-        title = body.title,
-        user = %session.user_id
-    ),
-    skip_all,
-)]
+#[tracing::instrument(name = "Create Post", skip(pool, content))]
 pub async fn handler(
     session: Session,
     State(pool): State<PgPool>,
-    Json(body): Json<Body>,
+    Json(Body { title, content }): Json<Body>,
 ) -> Result<Json<Value>, Error> {
-    let title = Title::try_from(body.title)?;
-    let content = Content::try_from(body.content)?;
     let slug = generate_slug(&pool, &title).await?;
     let id = Uuid::new_v4();
 
@@ -94,16 +81,12 @@ async fn insert_post(
 #[derive(Debug, Error)]
 #[error(transparent)]
 pub enum Error {
-    Title(#[from] TitleError),
-    Content(#[from] ContentError),
     Database(#[from] sqlx::Error),
 }
 
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
         match self {
-            Error::Title(_) | Error::Content(_) => StatusCode::BAD_REQUEST.into_response(),
-
             Error::Database(_) => {
                 tracing::error!("{self}");
                 StatusCode::INTERNAL_SERVER_ERROR.into_response()

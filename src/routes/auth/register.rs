@@ -13,44 +13,29 @@ use sqlx::PgPool;
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::domain::user::{
-    display_name::{DisplayName, DisplayNameError},
-    password::{Password, PasswordError},
-    username::{Username, UsernameError},
-};
+use crate::domain::user::{display_name::DisplayName, password::Password, username::Username};
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct Body {
-    username: String,
-    display_name: String,
-    password: String,
+    username: Username,
+    display_name: DisplayName,
+    password: Password,
 }
 
-#[tracing::instrument(
-    name = "Register User",
-    skip_all,
-    fields(
-        username = body.username,
-        display_name = body.display_name,
-    )
-)]
+#[tracing::instrument(name = "Register User", skip(pool))]
 pub async fn handler(
     State(pool): State<PgPool>,
     Json(body): Json<Body>,
 ) -> Result<StatusCode, Error> {
-    let username = Username::try_from(body.username)?;
-    let display_name = DisplayName::try_from(body.display_name)?;
-    let password = Password::try_from(body.password)?;
-
-    if check_if_username_exists(&pool, &username).await? {
+    if check_if_username_exists(&pool, &body.username).await? {
         return Err(Error::AlreadyExists);
     }
 
     let id = Uuid::new_v4();
     let salt = SaltString::encode_b64(id.as_bytes())?;
-    let password_hash = Argon2::default().hash_password(password.as_bytes(), &salt)?;
+    let password_hash = Argon2::default().hash_password(body.password.as_bytes(), &salt)?;
 
-    insert_user(&pool, id, username, display_name, password_hash).await?;
+    insert_user(&pool, id, body.username, body.display_name, password_hash).await?;
 
     Ok(StatusCode::CREATED)
 }
@@ -91,9 +76,6 @@ async fn insert_user(
 #[derive(Debug, Error)]
 #[error(transparent)]
 pub enum Error {
-    Username(#[from] UsernameError),
-    DisplayName(#[from] DisplayNameError),
-    Password(#[from] PasswordError),
     Database(#[from] sqlx::Error),
     PasswordHash(#[from] password_hash::Error),
 
@@ -105,11 +87,6 @@ impl IntoResponse for Error {
     fn into_response(self) -> Response {
         match self {
             Error::AlreadyExists => StatusCode::CONFLICT.into_response(),
-
-            Error::Username(_) | Error::DisplayName(_) | Error::Password(_) => {
-                let err = self.to_string();
-                (StatusCode::BAD_REQUEST, err).into_response()
-            }
 
             Error::Database(_) | Error::PasswordHash(_) => {
                 tracing::error!("{self}");

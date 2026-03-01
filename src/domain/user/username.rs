@@ -1,6 +1,9 @@
+use serde::Deserialize;
 use thiserror::Error;
 use unicode_segmentation::UnicodeSegmentation;
 
+#[derive(Deserialize, Debug)]
+#[serde(try_from = "String")]
 pub struct Username(String);
 
 impl TryFrom<String> for Username {

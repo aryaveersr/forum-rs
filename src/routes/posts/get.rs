@@ -9,14 +9,13 @@ use sqlx::{FromRow, PgPool};
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::domain::post::slug::{Slug, SlugError};
+use crate::domain::post::slug::Slug;
 
 #[tracing::instrument(name = "Get Post", skip(pool))]
 pub async fn handler(
     State(pool): State<PgPool>,
-    Path(slug): Path<String>,
+    Path(slug): Path<Slug>,
 ) -> Result<Json<Post>, Error> {
-    let slug = Slug::try_from(slug)?;
     let post = get_post(&pool, slug).await?.ok_or(Error::DoesNotExist)?;
 
     Ok(Json(post))
@@ -45,7 +44,6 @@ async fn get_post(pool: &PgPool, slug: Slug) -> Result<Option<Post>, sqlx::Error
 #[derive(Debug, Error)]
 #[error(transparent)]
 pub enum Error {
-    Slug(#[from] SlugError),
     Database(#[from] sqlx::Error),
 
     #[error("Post does not exist")]
@@ -55,7 +53,6 @@ pub enum Error {
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
         match self {
-            Error::Slug(_) => StatusCode::BAD_REQUEST.into_response(),
             Error::DoesNotExist => StatusCode::NOT_FOUND.into_response(),
 
             Error::Database(_) => {
