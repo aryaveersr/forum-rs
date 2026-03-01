@@ -11,6 +11,7 @@ use uuid::Uuid;
 #[derive(Debug)]
 pub struct Session {
     pub user_id: Uuid,
+    pub session_id: Uuid,
 }
 
 impl<S> FromRequestParts<S> for Session
@@ -60,6 +61,7 @@ where
         match row {
             Some(row) => Ok(Some(Session {
                 user_id: row.user_id,
+                session_id: row.id,
             })),
 
             None => Ok(None),

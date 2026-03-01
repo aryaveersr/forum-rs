@@ -23,6 +23,24 @@ pub async fn create_session(pool: &PgPool, user_id: Uuid) -> Result<Uuid, sqlx::
 }
 
 #[tracing::instrument(skip_all)]
+pub async fn logout_session(pool: &PgPool, session_id: Uuid) -> Result<(), sqlx::Error> {
+    sqlx::query!("DELETE FROM sessions WHERE id = $1", session_id)
+        .execute(pool)
+        .await?;
+
+    Ok(())
+}
+
+#[tracing::instrument(skip_all)]
+pub async fn logout_all_sessions(pool: &PgPool, user_id: Uuid) -> Result<(), sqlx::Error> {
+    sqlx::query!("DELETE FROM sessions WHERE user_id = $1", user_id)
+        .execute(pool)
+        .await?;
+
+    Ok(())
+}
+
+#[tracing::instrument(skip_all)]
 async fn delete_expired_sessions(pool: &PgPool) -> Result<(), sqlx::Error> {
     sqlx::query!("DELETE FROM sessions WHERE expires_at < $1", Utc::now())
         .execute(pool)
