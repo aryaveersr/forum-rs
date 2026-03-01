@@ -4,6 +4,7 @@ use sqlx::PgPool;
 use tower::Layer;
 use tower_http::{
     normalize_path::{NormalizePath, NormalizePathLayer},
+    services::{ServeDir, ServeFile},
     trace::TraceLayer,
 };
 
@@ -23,8 +24,14 @@ pub struct AppState {
 pub fn app(pool: PgPool) -> NormalizePath<Router> {
     let state = AppState { pool };
 
+    let fallback = {
+        let index_html = ServeFile::new("frontend/build/index.html");
+        ServeDir::new("frontend/build").fallback(index_html)
+    };
+
     let svc = Router::new()
         .nest("/api", routes::routes())
+        .fallback_service(fallback)
         .with_state(state)
         .layer(TraceLayer::new_for_http().make_span_with(|req: &Request| {
             tracing::span!(

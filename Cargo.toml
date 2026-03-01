@@ -13,18 +13,21 @@ serde = "1.0.228"
 serde_json = "1.0.149"
 slug = "0.1.6"
 sqlx = { version = "0.8.6", default-features = false, features = [
+  "chrono",
   "macros",
   "migrate",
   "postgres",
   "runtime-tokio-rustls",
-  "uuid",
-  "chrono"
+  "uuid"
 ] }
 thiserror = "2.0.18"
 tokio = { version = "1.49.0", features = ["macros", "rt-multi-thread"] }
 tower = "0.5.3"
-tower-http = { version = "0.6.8", features = ["normalize-path", "trace"] }
+tower-http = { version = "0.6.8", features = ["fs", "normalize-path", "trace"] }
 tracing = "0.1.44"
 tracing-subscriber = "0.3.22"
 unicode-segmentation = "1.12.0"
 uuid = { version = "1.21.0", features = ["serde", "v4"] }
+
+[build-dependencies]
+build-deps = "0.1.4"
