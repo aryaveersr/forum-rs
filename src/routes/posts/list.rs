@@ -24,7 +24,7 @@ pub struct Post {
     username: String,
 }
 
-#[tracing::instrument(name = "Get post from database", skip_all)]
+#[tracing::instrument(skip_all)]
 async fn get_posts(pool: &PgPool) -> Result<Vec<Post>, sqlx::Error> {
     let posts = sqlx::query_as!(
         Post,

@@ -41,7 +41,7 @@ struct User {
     password_hash: String,
 }
 
-#[tracing::instrument(name = "Get User", skip_all)]
+#[tracing::instrument(skip_all)]
 async fn get_user(pool: &PgPool, username: &Username) -> Result<Option<User>, Error> {
     let user = sqlx::query_as!(
         User,
@@ -54,7 +54,7 @@ async fn get_user(pool: &PgPool, username: &Username) -> Result<Option<User>, Er
     Ok(user)
 }
 
-#[tracing::instrument(name = "Check Password", skip_all)]
+#[tracing::instrument(skip_all)]
 async fn check_password(password: Password, hash: String) -> Result<bool, password_hash::Error> {
     let span = tracing::Span::current();
 
@@ -74,7 +74,7 @@ async fn check_password(password: Password, hash: String) -> Result<bool, passwo
     .unwrap()
 }
 
-#[tracing::instrument(name = "Create Session", skip_all)]
+#[tracing::instrument(skip_all)]
 async fn insert_session(pool: &PgPool, session_id: Uuid, user_id: Uuid) -> Result<(), Error> {
     sqlx::query!(
         "INSERT INTO sessions (id, user_id, expires_at) VALUES ($1, $2, $3)",
@@ -88,7 +88,7 @@ async fn insert_session(pool: &PgPool, session_id: Uuid, user_id: Uuid) -> Resul
     Ok(())
 }
 
-#[tracing::instrument(name = "Delete Expired Sessions", skip_all)]
+#[tracing::instrument(skip_all)]
 async fn delete_expired_sessions(pool: &PgPool) -> Result<(), Error> {
     sqlx::query!("DELETE FROM sessions WHERE expires_at < $1", Utc::now())
         .execute(pool)

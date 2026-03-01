@@ -40,7 +40,7 @@ pub async fn handler(
     Ok(StatusCode::CREATED)
 }
 
-#[tracing::instrument(name = "Check if username exists", skip_all)]
+#[tracing::instrument(skip_all)]
 async fn check_if_username_exists(pool: &PgPool, username: &Username) -> Result<bool, sqlx::Error> {
     let exists = sqlx::query_scalar!(
         r#"SELECT EXISTS(SELECT 1 FROM users WHERE username = $1) AS "exists!""#,
@@ -52,7 +52,7 @@ async fn check_if_username_exists(pool: &PgPool, username: &Username) -> Result<
     Ok(exists)
 }
 
-#[tracing::instrument(name = "Insert User", skip_all)]
+#[tracing::instrument(skip_all)]
 async fn insert_user(
     pool: &PgPool,
     id: Uuid,

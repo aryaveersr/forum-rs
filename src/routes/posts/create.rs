@@ -38,7 +38,7 @@ pub async fn handler(
     })))
 }
 
-#[tracing::instrument(name = "Generate Slug", skip_all)]
+#[tracing::instrument(skip_all)]
 async fn generate_slug(pool: &PgPool, title: &Title) -> Result<Slug, sqlx::Error> {
     let mut slug = Slug::from(title);
 
@@ -55,7 +55,7 @@ async fn generate_slug(pool: &PgPool, title: &Title) -> Result<Slug, sqlx::Error
     Ok(slug)
 }
 
-#[tracing::instrument(name = "Insert Post", skip_all)]
+#[tracing::instrument(skip_all)]
 async fn insert_post(
     pool: &PgPool,
     id: Uuid,

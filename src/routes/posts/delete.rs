@@ -27,7 +27,7 @@ pub async fn handler(
     Ok(StatusCode::OK)
 }
 
-#[tracing::instrument("Get post author", skip_all)]
+#[tracing::instrument(skip_all)]
 async fn get_post_author(pool: &PgPool, id: Uuid) -> Result<Option<Uuid>, sqlx::Error> {
     let row = sqlx::query_scalar!("SELECT author_id FROM posts WHERE id = $1", id)
         .fetch_optional(pool)
@@ -36,7 +36,7 @@ async fn get_post_author(pool: &PgPool, id: Uuid) -> Result<Option<Uuid>, sqlx::
     Ok(row)
 }
 
-#[tracing::instrument("Delete post", skip_all)]
+#[tracing::instrument(skip_all)]
 async fn delete_post(pool: &PgPool, id: Uuid) -> Result<(), sqlx::Error> {
     sqlx::query!("DELETE FROM posts WHERE id = $1", id)
         .execute(pool)
