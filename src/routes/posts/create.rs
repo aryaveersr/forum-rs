@@ -27,7 +27,10 @@ pub struct Body {
 
 #[tracing::instrument(
     name = "Create Post",
-    fields(title = body.title)
+    fields(
+        title = body.title,
+        user = %session.user_id
+    ),
     skip_all,
 )]
 pub async fn handler(

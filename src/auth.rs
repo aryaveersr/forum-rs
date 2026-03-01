@@ -8,6 +8,7 @@ use sqlx::PgPool;
 use thiserror::Error;
 use uuid::Uuid;
 
+#[derive(Debug)]
 pub struct Session {
     pub user_id: Uuid,
 }
