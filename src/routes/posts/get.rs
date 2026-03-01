@@ -5,8 +5,9 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use serde::Serialize;
-use sqlx::PgPool;
+use sqlx::{FromRow, PgPool};
 use thiserror::Error;
+use uuid::Uuid;
 
 use crate::domain::post::slug::{Slug, SlugError};
 
@@ -21,25 +22,24 @@ pub async fn handler(
     Ok(Json(post))
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, FromRow)]
 pub struct Post {
+    id: Uuid,
     title: String,
     content: String,
 }
 
 #[tracing::instrument(name = "Get post from database", skip_all)]
 async fn get_post(pool: &PgPool, slug: Slug) -> Result<Option<Post>, sqlx::Error> {
-    let post = sqlx::query!(
-        r#"SELECT title, content FROM posts WHERE slug = $1"#,
+    let post = sqlx::query_as!(
+        Post,
+        r#"SELECT id, title, content FROM posts WHERE slug = $1"#,
         slug.to_string()
     )
     .fetch_optional(pool)
     .await?;
 
-    Ok(post.map(|row| Post {
-        title: row.title,
-        content: row.content,
-    }))
+    Ok(post)
 }
 
 #[derive(Debug, Error)]

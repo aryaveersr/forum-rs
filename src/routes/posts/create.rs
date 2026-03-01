@@ -5,6 +5,7 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use serde::Deserialize;
+use serde_json::{Value, json};
 use sqlx::PgPool;
 use thiserror::Error;
 use uuid::Uuid;
@@ -33,14 +34,18 @@ pub async fn handler(
     session: Session,
     State(pool): State<PgPool>,
     Json(body): Json<Body>,
-) -> Result<String, Error> {
+) -> Result<Json<Value>, Error> {
     let title = Title::try_from(body.title)?;
     let content = Content::try_from(body.content)?;
     let slug = generate_slug(&pool, &title).await?;
+    let id = Uuid::new_v4();
 
-    insert_post(&pool, session.user_id, &title, &content, &slug).await?;
+    insert_post(&pool, id, session.user_id, &title, &content, &slug).await?;
 
-    Ok(slug.to_string())
+    Ok(Json(json!({
+        "id": id.to_string(),
+        "slug": slug.to_string()
+    })))
 }
 
 #[tracing::instrument(name = "Generate Slug", skip_all)]
@@ -63,6 +68,7 @@ async fn generate_slug(pool: &PgPool, title: &Title) -> Result<Slug, sqlx::Error
 #[tracing::instrument(name = "Insert Post", skip_all)]
 async fn insert_post(
     pool: &PgPool,
+    id: Uuid,
     author_id: Uuid,
     title: &Title,
     content: &Content,
@@ -70,7 +76,7 @@ async fn insert_post(
 ) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"INSERT INTO posts (id, author_id, title, content, slug) VALUES ($1, $2, $3, $4, $5)"#,
-        Uuid::new_v4(),
+        id,
         author_id,
         title.as_ref(),
         content.as_ref(),
