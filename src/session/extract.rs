@@ -50,22 +50,16 @@ where
 
         let session_id = Uuid::parse_str(id_str)?;
 
-        let row = sqlx::query!(
-            "SELECT id, user_id FROM sessions WHERE id = $1 AND expires_at > $2",
+        let row = sqlx::query_as!(
+            Session,
+            "SELECT id as session_id, user_id FROM sessions WHERE id = $1 AND expires_at > $2",
             session_id,
             Utc::now()
         )
         .fetch_optional(&pool)
         .await?;
 
-        match row {
-            Some(row) => Ok(Some(Session {
-                user_id: row.user_id,
-                session_id: row.id,
-            })),
-
-            None => Ok(None),
-        }
+        Ok(row)
     }
 }
 
