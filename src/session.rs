@@ -3,6 +3,10 @@ use axum::{
     http::{StatusCode, header::ToStrError, request::Parts},
     response::IntoResponse,
 };
+use axum_extra::extract::{
+    CookieJar,
+    cookie::{Cookie, SameSite},
+};
 use chrono::{Duration, Utc};
 use sqlx::PgPool;
 use thiserror::Error;
@@ -72,6 +76,19 @@ impl Session {
 
         Ok(())
     }
+
+    pub fn cookie(&self) -> Cookie<'static> {
+        let builder = Cookie::build(("session", self.id.to_string()))
+            .http_only(true)
+            .same_site(SameSite::Strict)
+            .expires(time::OffsetDateTime::now_utc() + time::Duration::days(7));
+
+        if cfg!(debug_assertions) {
+            builder.into()
+        } else {
+            builder.secure(true).into()
+        }
+    }
 }
 
 impl<S> FromRequestParts<S> for Session
@@ -102,15 +119,14 @@ where
         state: &S,
     ) -> Result<Option<Self>, Self::Rejection> {
         let pool = PgPool::from_ref(state);
+        let jar = CookieJar::from_headers(&parts.headers);
 
-        let id_str = match parts.headers.get("Session-ID") {
-            Some(id) => id.to_str()?,
+        let id = match jar.get("session") {
+            Some(id) => Uuid::parse_str(id.value())?,
             None => return Ok(None),
         };
 
-        let session_id = Uuid::parse_str(id_str)?;
-
-        Ok(Session::from_id(&pool, session_id).await?)
+        Ok(Session::from_id(&pool, id).await?)
     }
 }
 

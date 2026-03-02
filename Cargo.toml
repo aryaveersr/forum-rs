@@ -22,6 +22,7 @@ sqlx = { version = "0.8.6", default-features = false, features = [
   "uuid"
 ] }
 thiserror = "2.0.18"
+time = "0.3.47"
 tokio = { version = "1.49.0", features = ["macros", "rt-multi-thread"] }
 tower = "0.5.3"
 tower-http = { version = "0.6.8", features = ["fs", "normalize-path", "trace"] }

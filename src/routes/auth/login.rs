@@ -5,6 +5,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
+use axum_extra::extract::CookieJar;
 use serde::Deserialize;
 use sqlx::PgPool;
 use thiserror::Error;
@@ -22,7 +23,11 @@ pub struct Body {
 }
 
 #[tracing::instrument(name = "Login User", skip(pool))]
-pub async fn handler(State(pool): State<PgPool>, Json(body): Json<Body>) -> Result<String, Error> {
+pub async fn handler(
+    State(pool): State<PgPool>,
+    jar: CookieJar,
+    Json(body): Json<Body>,
+) -> Result<(CookieJar, StatusCode), Error> {
     let user = get_user(&pool, &body.username)
         .await?
         .ok_or(Error::DoesNotExist)?;
@@ -33,7 +38,7 @@ pub async fn handler(State(pool): State<PgPool>, Json(body): Json<Body>) -> Resu
 
     let session = Session::new(&pool, user.id).await?;
 
-    Ok(session.id.to_string())
+    Ok((jar.add(session.cookie()), StatusCode::OK))
 }
 
 struct User {
