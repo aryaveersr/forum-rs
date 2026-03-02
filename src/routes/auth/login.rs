@@ -12,7 +12,7 @@ use uuid::Uuid;
 
 use crate::{
     domain::user::{password::Password, username::Username},
-    session::create_session,
+    session::Session,
 };
 
 #[derive(Deserialize, Debug)]
@@ -31,9 +31,9 @@ pub async fn handler(State(pool): State<PgPool>, Json(body): Json<Body>) -> Resu
         return Err(Error::InvalidCredentials);
     }
 
-    let session_id = create_session(&pool, user.id).await?;
+    let session = Session::new(&pool, user.id).await?;
 
-    Ok(session_id.to_string())
+    Ok(session.id.to_string())
 }
 
 struct User {

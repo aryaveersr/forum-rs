@@ -7,7 +7,7 @@ use serde::Deserialize;
 use sqlx::PgPool;
 use thiserror::Error;
 
-use crate::session::{Session, logout_all_sessions, logout_session};
+use crate::session::Session;
 
 #[derive(Deserialize)]
 pub struct LogoutQuery {
@@ -21,9 +21,9 @@ pub async fn handler(
     Query(LogoutQuery { all }): Query<LogoutQuery>,
 ) -> Result<StatusCode, Error> {
     if all {
-        logout_all_sessions(&pool, session.user_id).await?;
+        session.delete_all_sessions(&pool).await?;
     } else {
-        logout_session(&pool, session.session_id).await?;
+        session.delete_session(&pool).await?;
     }
 
     Ok(StatusCode::OK)

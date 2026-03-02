@@ -15,7 +15,7 @@ use uuid::Uuid;
 
 use crate::{
     domain::user::{display_name::DisplayName, password::Password, username::Username},
-    session::create_session,
+    session::Session,
 };
 
 #[derive(Deserialize, Debug)]
@@ -40,9 +40,9 @@ pub async fn handler(
 
     insert_user(&pool, id, body.username, body.display_name, password_hash).await?;
 
-    let session_id = create_session(&pool, id).await?;
+    let session = Session::new(&pool, id).await?;
 
-    Ok((StatusCode::CREATED, session_id.to_string()))
+    Ok((StatusCode::CREATED, session.id.to_string()))
 }
 
 #[tracing::instrument(skip_all)]
